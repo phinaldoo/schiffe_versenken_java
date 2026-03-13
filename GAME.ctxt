@@ -1,0 +1,14 @@
+#BlueJ class context
+comment0.target=GAME
+comment0.text=\r\n\ Beschreiben\ Sie\ hier\ die\ Klasse\ GAME.\r\n\ \r\n\ @author\ (Ihr\ Name)\ \r\n\ @version\ (eine\ Versionsnummer\ oder\ ein\ Datum)\r\n
+comment1.params=username1\ username2\ max_ship_2\ max_ship_3\ max_ship_4\ max_ship_5
+comment1.target=GAME(java.lang.String,\ java.lang.String,\ int,\ int,\ int,\ int)
+comment1.text=\r\n\ Konstruktor\ f\u00FCr\ Objekte\ der\ Klasse\ GAME\r\n
+comment2.params=user_id
+comment2.target=void\ print_for_user(int)
+comment2.text=\r\n\ Ein\ Beispiel\ einer\ Methode\ -\ ersetzen\ Sie\ diesen\ Kommentar\ mit\ Ihrem\ eigenen\r\n\ \r\n\ @param\ \ y\ \ \ \ ein\ Beispielparameter\ f\u00FCr\ eine\ Methode\r\n\ @return\ \ \ \ \ \ \ \ die\ Summe\ aus\ x\ und\ y\r\n
+comment3.params=
+comment3.target=int\ check_turn()
+comment4.params=user_id\ ship_array
+comment4.target=void\ setup(int,\ SHIP[])
+numComments=5

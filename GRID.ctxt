@@ -1,0 +1,17 @@
+#BlueJ class context
+comment0.target=GRID
+comment1.params=username\ y_length\ x_length\ max_ship_count
+comment1.target=GRID(java.lang.String,\ int,\ int,\ int)
+comment2.params=is_owned
+comment2.target=void\ print_grid(boolean)
+comment3.params=x\ y
+comment3.target=int\ set_field(int,\ int)
+comment4.params=
+comment4.target=java.lang.String\ get_username()
+comment5.params=
+comment5.target=boolean\ check_win()
+comment6.params=y_start\ y_end\ x_start\ x_end
+comment6.target=int\ create_ship(int,\ int,\ int,\ int)
+comment7.params=
+comment7.target=void\ setup()
+numComments=8
