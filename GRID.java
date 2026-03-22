@@ -1,130 +1,217 @@
-public class GRID
-{
-    private int[][] grid_matrix;
-    private String username;
-    private int ship_counter = 0;
-    private SHIP[] ship_array;
-    private boolean finished_placing_ships = false;
-    private int max_ship_2;
-    private int max_ship_3;
-    private int max_ship_4;
-    private int max_ship_5;
-    private int current_ship_2 = 0;
-    private int current_ship_3 = 0;
-    private int current_ship_4 = 0;
-    private int current_ship_5 = 0;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
-    public GRID(String username, int y_length, int x_length, int max_ship_count, int max_ship_2, int max_ship_3, int max_ship_4, int max_ship_5) throws Exception {
-        username = username;
-        ship_array = new SHIP[max_ship_count];
-        grid_matrix = new int[y_length][x_length];
-        max_ship_2 = max_ship_2;
-        max_ship_3 = max_ship_3;
-        max_ship_4 = max_ship_4;
-        max_ship_5 = max_ship_5;
-    }
-    public void print_grid(boolean is_owned) {
-        for (int i = 0; i < grid_matrix.length; i++) {
-            for (int j = 0; j < grid_matrix[0].length; j++) {
-                System.out.print(grid_matrix[i][j]);
-            }          
-            System.out.println();
+public class GRID {
+    private final String username;
+    private final int size;
+    private final List<SHIP> ships;
+    private final int[][] shipIndexAtCell;
+    private final boolean[][] shotsTaken;
+    private int placedShipCells;
+    private int hitShipCells;
+
+    public GRID(String username, int size) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username must not be empty.");
         }
-    }
-    public int set_field(int x, int y){
-        // Get the ship number of this field
-        int ship_id = grid_matrix[y][x];
-        if (ship_id < 1) {
-            return -2;
+        if (size < 2 || size > 26) {
+            throw new IllegalArgumentException("Grid size must be between 2 and 26.");
         }
-        SHIP ship = ship_array[ship_id-1]; 
-        int ship_result = ship.set_field(x,y);
-        System.out.println(ship_result);
-        if (ship_result == 1) {
-            if (check_win()) {
-                return 10;
-            }
-        }
-        return -1;
+        this.username = username.trim();
+        this.size = size;
+        this.ships = new ArrayList<SHIP>();
+        this.shipIndexAtCell = new int[size][size];
+        this.shotsTaken = new boolean[size][size];
+        this.placedShipCells = 0;
+        this.hitShipCells = 0;
     }
-    public String get_username() {
+
+    public String getUsername() {
         return username;
     }
-    public boolean check_win() {
-        boolean win = true;
-        for (int i = 0; i < ship_counter; i++) {
-            SHIP temp_ship = ship_array[i];
-            boolean ship_check_win = temp_ship.check_ship_finished();
-            if (ship_check_win) {
-                win = false;
+
+    public int getSize() {
+        return size;
+    }
+
+    public List<SHIP> getShips() {
+        return Collections.unmodifiableList(ships);
+    }
+
+    public boolean canPlaceShip(Coordinate start, Orientation orientation, int length) {
+        List<Coordinate> cells = getShipCells(start, orientation, length);
+        for (Coordinate c : cells) {
+            if (shipIndexAtCell[c.getRow()][c.getColumn()] > 0) {
+                return false;
+            }
+            if (hasAdjacentShip(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public SHIP placeShip(String shipName, Coordinate start, Orientation orientation, int length) {
+        if (length < 2) {
+            throw new IllegalArgumentException("Ship length must be at least 2.");
+        }
+        List<Coordinate> cells = getShipCells(start, orientation, length);
+        if (!canPlaceShip(start, orientation, length)) {
+            throw new IllegalArgumentException("Ship placement collides or touches another ship.");
+        }
+        SHIP ship = new SHIP(shipName, cells);
+        ships.add(ship);
+        int shipIndex = ships.size();
+        for (Coordinate c : cells) {
+            shipIndexAtCell[c.getRow()][c.getColumn()] = shipIndex;
+        }
+        placedShipCells += cells.size();
+        return ship;
+    }
+
+    public void placeShipsRandomly(List<ShipType> fleetDefinition, long seed) {
+        if (fleetDefinition == null || fleetDefinition.isEmpty()) {
+            throw new IllegalArgumentException("Fleet definition must not be empty.");
+        }
+        clearShips();
+        Random random = new Random(seed);
+        for (ShipType type : fleetDefinition) {
+            for (int i = 1; i <= type.getCount(); i++) {
+                boolean placed = false;
+                int tries = 0;
+                while (!placed && tries < 10_000) {
+                    tries++;
+                    Orientation orientation = random.nextBoolean() ? Orientation.HORIZONTAL : Orientation.VERTICAL;
+                    int row = random.nextInt(size);
+                    int col = random.nextInt(size);
+                    Coordinate start = new Coordinate(row, col);
+                    if (canPlaceShip(start, orientation, type.getLength())) {
+                        placeShip(type.getName() + " #" + i, start, orientation, type.getLength());
+                        placed = true;
+                    }
+                }
+                if (!placed) {
+                    throw new IllegalStateException("Unable to place all ships for " + type.getName() + ".");
+                }
+            }
+        }
+    }
+
+    public ShotReport fireAt(Coordinate target) {
+        Coordinate c = Coordinate.validateBounds(target, size);
+        if (shotsTaken[c.getRow()][c.getColumn()]) {
+            return new ShotReport(ShotResult.ALREADY_TARGETED, c, null, false);
+        }
+
+        shotsTaken[c.getRow()][c.getColumn()] = true;
+        int shipIndex = shipIndexAtCell[c.getRow()][c.getColumn()];
+        if (shipIndex == 0) {
+            return new ShotReport(ShotResult.MISS, c, null, false);
+        }
+
+        SHIP ship = ships.get(shipIndex - 1);
+        ship.registerHit(c);
+        hitShipCells++;
+        if (ship.isSunk()) {
+            boolean won = isAllShipsSunk();
+            return new ShotReport(ShotResult.SUNK, c, ship.getName(), won);
+        }
+        return new ShotReport(ShotResult.HIT, c, null, false);
+    }
+
+    public boolean isAllShipsSunk() {
+        return placedShipCells > 0 && hitShipCells >= placedShipCells;
+    }
+
+    public boolean hasShotAt(Coordinate c) {
+        Coordinate checked = Coordinate.validateBounds(c, size);
+        return shotsTaken[checked.getRow()][checked.getColumn()];
+    }
+
+    public boolean hasShipAt(Coordinate c) {
+        Coordinate checked = Coordinate.validateBounds(c, size);
+        return shipIndexAtCell[checked.getRow()][checked.getColumn()] > 0;
+    }
+
+    public String renderOwnBoard() {
+        return renderBoard(true);
+    }
+
+    public String renderOpponentView() {
+        return renderBoard(false);
+    }
+
+    private String renderBoard(boolean ownBoard) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("   ");
+        for (int col = 1; col <= size; col++) {
+            if (col < 10) {
+                sb.append(" ");
+            }
+            sb.append(col).append(" ");
+        }
+        sb.append('\n');
+
+        for (int row = 0; row < size; row++) {
+            sb.append((char) ('A' + row)).append("  ");
+            for (int col = 0; col < size; col++) {
+                boolean shot = shotsTaken[row][col];
+                boolean ship = shipIndexAtCell[row][col] > 0;
+                char symbol;
+                if (shot && ship) {
+                    symbol = 'X';
+                } else if (shot) {
+                    symbol = 'o';
+                } else if (ownBoard && ship) {
+                    symbol = 'S';
+                } else {
+                    symbol = '.';
+                }
+                sb.append(" ").append(symbol).append(" ");
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
+    private List<Coordinate> getShipCells(Coordinate start, Orientation orientation, int length) {
+        List<Coordinate> cells = new ArrayList<Coordinate>();
+        for (int i = 0; i < length; i++) {
+            int row = start.getRow() + (orientation == Orientation.VERTICAL ? i : 0);
+            int column = start.getColumn() + (orientation == Orientation.HORIZONTAL ? i : 0);
+            Coordinate c = new Coordinate(row, column);
+            cells.add(Coordinate.validateBounds(c, size));
+        }
+        return cells;
+    }
+
+    private boolean hasAdjacentShip(Coordinate coordinate) {
+        for (int dr = -1; dr <= 1; dr++) {
+            for (int dc = -1; dc <= 1; dc++) {
+                int rr = coordinate.getRow() + dr;
+                int cc = coordinate.getColumn() + dc;
+                if (rr < 0 || cc < 0 || rr >= size || cc >= size) {
+                    continue;
+                }
+                if (shipIndexAtCell[rr][cc] > 0) {
+                    return true;
+                }
             }
         }
         return false;
     }
-    public int create_ship(int y_start, int y_end, int x_start, int x_end) throws Exception {
-        if (!finished_placing_ships) {
-            // Check if the length are valid and not out of reach
-            if (y_end > (grid_matrix.length - 1)) {
-                throw new Exception("Ship y coordinate out of reach");
+
+    private void clearShips() {
+        ships.clear();
+        placedShipCells = 0;
+        hitShipCells = 0;
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                shipIndexAtCell[row][col] = 0;
+                shotsTaken[row][col] = false;
             }
-            if (x_end > (grid_matrix.length - 1)) {
-                throw new Exception("Ship y coordinate out of reach");
-            }
-            int x_length = x_end - x_start;
-            int y_length = y_end - y_start;
-            if (x_length != 0 && y_length != 0) {
-                throw new Exception("Ship can not be diagonal");
-            }
-            int ship_length;
-            boolean vertical = false;
-            if (x_length == 0) {
-                ship_length = y_length;
-                vertical = true;
-            } else {
-                ship_length = x_length;
-            }
-            if (vertical) {
-                for (int i = 0; i <= ship_length; i++) {
-                    int y_cord = y_start + i;
-                    if (grid_matrix[y_cord][x_start] != 0) {
-                        throw new Exception("Ship already exists for this position.");
-                    }
-                }
-            } else {
-                for (int i = 0; i <= ship_length; i++) {
-                    int x_cord = y_start + i;
-                    if (grid_matrix[y_start][x_cord] != 0) {
-                        throw new Exception("Ship already exists for this position.");
-                    }
-                } 
-            }
-            // Ship can be placed
-            // Create new ship object
-            SHIP new_ship = new SHIP(y_start, y_end, x_start, x_end, ship_length);
-            ship_array[ship_counter] = new_ship;
-            ship_counter++;
-            // Set the matrix to display the new ship
-            if (vertical) {
-                for (int i = 0; i <= ship_length; i++) {
-                    int y_cord = y_start + i;
-                    if (grid_matrix[y_cord][x_start] == 0) {
-                        grid_matrix[y_cord][x_start] = ship_counter;
-                    }
-                }
-            } else {
-               for (int i = 0; i <= ship_length; i++) {
-                    int x_cord = x_start + i;
-                    if (grid_matrix[y_start][x_cord] == 0) {
-                        grid_matrix[y_start][x_cord] = ship_counter;
-                    }
-                } 
-            }
-            return 1;
-        } else {
-            throw new Exception("Already finsihed creating ships!"); 
         }
-    }
-    public void setup() throws Exception {
-        finished_placing_ships = true;
     }
 }
