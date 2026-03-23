@@ -17,6 +17,7 @@ public class GamePanel extends JPanel {
     private JPanel messagePanel;
     private JLabel messageLabel;
     private ModernButton endTurnButton;
+    private ModernButton settingsButton;
     
     private boolean canShoot = true;
     private Timer messageTimer;
@@ -44,6 +45,10 @@ public class GamePanel extends JPanel {
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
+        
+        settingsButton = new ModernButton("Einstellungen", BattleshipGUI.OCEAN_LIGHT);
+        settingsButton.addActionListener(e -> parent.showSettingsDialog());
+        panel.add(settingsButton, BorderLayout.EAST);
         
         turnLabel = new JLabel("Spieler am Zug");
         turnLabel.setFont(BattleshipGUI.TITLE_FONT);
@@ -185,6 +190,7 @@ public class GamePanel extends JPanel {
         canShoot = true;
         endTurnButton.setVisible(false);
         updateTurnInfo();
+        showMessage("Spiel gestartet - Viel Erfolg!", BattleshipGUI.TEXT_PRIMARY);
     }
     
     public void refreshBoards() {
@@ -271,5 +277,15 @@ public class GamePanel extends JPanel {
         GAME game = parent.getGame();
         game.switchTurn();
         parent.endTurn();
+    }
+    
+    public void resetState() {
+        ownBoard.setGrid(null);
+        enemyBoard.setGrid(null);
+        canShoot = true;
+        endTurnButton.setVisible(false);
+        turnLabel.setText("Spieler am Zug");
+        statusLabel.setText("Wähle ein Ziel auf dem gegnerischen Feld");
+        showMessage("Spiel gestartet - Viel Erfolg!", BattleshipGUI.TEXT_PRIMARY);
     }
 }

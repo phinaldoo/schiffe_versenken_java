@@ -17,6 +17,7 @@ public class SetupPanel extends JPanel {
     private ModernButton rotateButton;
     private ModernButton randomButton;
     private ModernButton confirmButton;
+    private ModernButton settingsButton;
     
     private int currentPlayerIndex;
     private GRID currentGrid;
@@ -47,23 +48,32 @@ public class SetupPanel extends JPanel {
     }
     
     private JPanel createHeaderPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
         
         titleLabel = new JLabel("Schiffe platzieren");
         titleLabel.setFont(BattleshipGUI.TITLE_FONT);
         titleLabel.setForeground(BattleshipGUI.TEXT_PRIMARY);
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         instructionLabel = new JLabel("Klicke auf das Spielfeld um dein Schiff zu platzieren");
         instructionLabel.setFont(BattleshipGUI.LABEL_FONT);
         instructionLabel.setForeground(BattleshipGUI.TEXT_SECONDARY);
-        instructionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        instructionLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
-        panel.add(titleLabel);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(instructionLabel);
+        settingsButton = new ModernButton("Einstellungen", BattleshipGUI.OCEAN_LIGHT);
+        settingsButton.addActionListener(e -> parent.showSettingsDialog());
+        
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        instructionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        textPanel.add(titleLabel);
+        textPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        textPanel.add(instructionLabel);
+        
+        panel.add(textPanel, BorderLayout.CENTER);
+        panel.add(settingsButton, BorderLayout.EAST);
         
         return panel;
     }
@@ -303,5 +313,22 @@ public class SetupPanel extends JPanel {
     
     private void confirmSetup() {
         parent.setupComplete(currentPlayerIndex);
+    }
+    
+    public void resetState() {
+        currentGrid = null;
+        currentShipTypeIndex = 0;
+        currentShipNumber = 1;
+        currentOrientation = Orientation.HORIZONTAL;
+        titleLabel.setText("Schiffe platzieren");
+        instructionLabel.setText("Klicke auf das Spielfeld um dein Schiff zu platzieren");
+        shipInfoLabel.setText("Warte...");
+        boardPanel.setGrid(null);
+        boardPanel.setPlacementMode(false, 0, currentOrientation);
+        rotateButton.setEnabled(false);
+        confirmButton.setEnabled(false);
+        shipListPanel.removeAll();
+        shipListPanel.revalidate();
+        shipListPanel.repaint();
     }
 }
