@@ -106,6 +106,12 @@ public class ResultPanel extends JPanel {
         animationTimer.start();
     }
     
+    public void stopCelebration() {
+        animationTimer.stop();
+        confettiList.clear();
+        repaint();
+    }
+    
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);

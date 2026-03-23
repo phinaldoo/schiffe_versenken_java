@@ -200,7 +200,27 @@ public class BattleshipGUI extends JFrame {
     }
     
     public void newGame() {
+        game = null;
+        player1Name = null;
+        player2Name = null;
+        setupPanel.resetState();
+        gamePanel.resetState();
+        resultPanel.stopCelebration();
         showWelcome();
+    }
+    
+    public void showSettingsDialog() {
+        JDialog dialog = createSettingsDialog();
+        dialog.setVisible(true);
+    }
+    
+    public void leaveCurrentGame() {
+        newGame();
+    }
+    
+    public void closeGame() {
+        dispose();
+        System.exit(0);
     }
     
     public GAME getGame() {
@@ -213,6 +233,153 @@ public class BattleshipGUI extends JFrame {
     
     public int getBoardSize() {
         return boardSize;
+    }
+    
+    private JDialog createSettingsDialog() {
+        JDialog dialog = new JDialog(this, true);
+        dialog.setUndecorated(true);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        dialog.setResizable(false);
+        dialog.setSize(440, 330);
+        dialog.setLocationRelativeTo(this);
+        
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                GradientPaint gp = new GradientPaint(0, 0, OCEAN_DARK, getWidth(), getHeight(), OCEAN_MEDIUM);
+                g2d.setPaint(gp);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 28, 28);
+                
+                g2d.setColor(new Color(ACCENT_COLOR.getRed(), ACCENT_COLOR.getGreen(), ACCENT_COLOR.getBlue(), 130));
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 28, 28);
+                g2d.dispose();
+            }
+        };
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(22, 28, 28, 28));
+        
+        JPanel titleBar = new JPanel(new BorderLayout());
+        titleBar.setOpaque(false);
+        
+        JLabel titleLabel = new JLabel("Einstellungen");
+        titleLabel.setFont(TITLE_FONT);
+        titleLabel.setForeground(TEXT_PRIMARY);
+        
+        JButton closeButton = createDialogCloseButton();
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        titleBar.add(titleLabel, BorderLayout.WEST);
+        titleBar.add(closeButton, BorderLayout.EAST);
+        
+        JLabel descriptionLabel = new JLabel("<html>Verwalte das laufende Spiel oder schliesse die Anwendung.</html>");
+        descriptionLabel.setFont(LABEL_FONT);
+        descriptionLabel.setForeground(TEXT_SECONDARY);
+        descriptionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        ModernButton leaveButton = new ModernButton("Spiel verlassen", WARNING_COLOR);
+        leaveButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        leaveButton.addActionListener(e -> {
+            dialog.dispose();
+            confirmLeaveCurrentGame();
+        });
+        
+        JLabel leaveHint = createDialogHintLabel("Beendet das aktuelle Match und bringt dich zum Startbildschirm.");
+        
+        ModernButton closeGameButton = new ModernButton("Spiel schliessen", HIT_COLOR);
+        closeGameButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        closeGameButton.addActionListener(e -> {
+            dialog.dispose();
+            confirmCloseGame();
+        });
+        
+        JLabel closeHint = createDialogHintLabel("Beendet die komplette Anwendung.");
+        
+        ModernButton resumeButton = new ModernButton("Zurueck", ACCENT_COLOR);
+        resumeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        resumeButton.addActionListener(e -> dialog.dispose());
+        
+        panel.add(titleBar);
+        panel.add(Box.createRigidArea(new Dimension(0, 14)));
+        panel.add(descriptionLabel);
+        panel.add(Box.createRigidArea(new Dimension(0, 26)));
+        panel.add(leaveButton);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(leaveHint);
+        panel.add(Box.createRigidArea(new Dimension(0, 18)));
+        panel.add(closeGameButton);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(closeHint);
+        panel.add(Box.createVerticalGlue());
+        panel.add(resumeButton);
+        
+        dialog.setContentPane(panel);
+        dialog.getRootPane().setDefaultButton(resumeButton);
+        dialog.getRootPane().registerKeyboardAction(
+            e -> dialog.dispose(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        return dialog;
+    }
+    
+    private JButton createDialogCloseButton() {
+        JButton button = new JButton("x");
+        button.setFont(HEADER_FONT);
+        button.setForeground(TEXT_PRIMARY);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+        button.setContentAreaFilled(false);
+        button.setOpaque(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+    
+    private JLabel createDialogHintLabel(String text) {
+        JLabel label = new JLabel("<html><div style='width: 320px;'>" + text + "</div></html>");
+        label.setFont(SMALL_FONT);
+        label.setForeground(TEXT_SECONDARY);
+        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return label;
+    }
+    
+    private void confirmLeaveCurrentGame() {
+        int selection = JOptionPane.showOptionDialog(
+            this,
+            "Das aktuelle Spiel wird beendet und du kehrst zum Startbildschirm zurueck.",
+            "Spiel verlassen?",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE,
+            null,
+            new Object[]{"Spiel verlassen", "Abbrechen"},
+            "Abbrechen"
+        );
+        
+        if (selection == JOptionPane.YES_OPTION) {
+            leaveCurrentGame();
+        }
+    }
+    
+    private void confirmCloseGame() {
+        int selection = JOptionPane.showOptionDialog(
+            this,
+            "Die Anwendung wird sofort geschlossen.",
+            "Spiel schliessen?",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE,
+            null,
+            new Object[]{"Spiel schliessen", "Abbrechen"},
+            "Abbrechen"
+        );
+        
+        if (selection == JOptionPane.YES_OPTION) {
+            closeGame();
+        }
     }
     
     public static void main(String[] args) {
