@@ -1,6 +1,7 @@
+# School Project
 # Schiffe Versenken (Java Konsole)
 
-Dieses Projekt enthaelt ein voll spielbares **Schiffe-Versenken-Spiel** fuer die Konsole mit sauberer Trennung zwischen:
+Dieses Projekt enthaelt ein voll spielbares **Schiffe-Versenken-Spiel** für die Konsole mit sauberer Trennung zwischen:
 
 - **Game Engine** (Regeln, Spiellogik, Trefferauswertung)
 - **Console UI** (Benutzereingabe und Anzeige)
