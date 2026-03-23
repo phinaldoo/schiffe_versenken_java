@@ -41,7 +41,12 @@ public class GRID {
     }
 
     public boolean canPlaceShip(Coordinate start, Orientation orientation, int length) {
-        List<Coordinate> cells = getShipCells(start, orientation, length);
+        List<Coordinate> cells;
+        try {
+            cells = getShipCells(start, orientation, length);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
         for (Coordinate c : cells) {
             if (shipIndexAtCell[c.getRow()][c.getColumn()] > 0) {
                 return false;
