@@ -7,10 +7,10 @@ public enum Orientation {
             throw new IllegalArgumentException("Orientation must not be null.");
         }
         String normalized = input.trim().toUpperCase();
-        if (normalized.equals("H") || normalized.equals("HORIZONTAL")) {
+        if (normalized.equals("H")) {
             return HORIZONTAL;
         }
-        if (normalized.equals("V") || normalized.equals("VERTICAL")) {
+        if (normalized.equals("V")) {
             return VERTICAL;
         }
         throw new IllegalArgumentException("Orientation must be H or V.");
